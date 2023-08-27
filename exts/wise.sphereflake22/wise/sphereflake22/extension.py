@@ -5,6 +5,7 @@ from .sfgen.sphereflake import SphereMeshFactory, SphereFlakeFactory
 from .sfcontrols import SfControls
 from .sfwindow import SfcWindow
 import omni.kit.extensions
+import carb
 import carb.events
 import time
 from pxr import Usd
@@ -37,9 +38,9 @@ def on_update_event(e: carb.events.IEvent):
     if elap > gap:
         last_update_time = time.time()
         totelap = time.time() - start_time
-        stage = omni.usd.get_context().get_stage()
-        stagewd = stage if stage is not None else "None"
-        print(f"on_update_event {update_count} {totelap:.3f}: typ:{e.type} pay:{e.payload} elap: {elap:.3f} stage:{stagewd} (trc1)")
+        # stage = omni.usd.get_context().get_stage()
+        # stagewd = stage if stage is not None else "None"
+        # print(f"on_update_event {update_count} {totelap:.3f}: typ:{e.type} pay:{e.payload} elap: {elap:.3f} stage:{stagewd} (trc)")
         if not triggered_show and totelap > 10:
             if _instance_handle is not None and _instance_handle._sfw is not None:
                 print("Triggering ShowTheDamnWindow (trc)")
@@ -104,7 +105,7 @@ class SphereflakeBenchmarkExtension(omni.ext.IExt):
         # self.WriteOutPathAndSysPath()
 
         # Model objects
-        self._matman = MatMan()
+        self._matman = MatMan(self._stage)
         self._smf = SphereMeshFactory(self._stage, self._matman)
         self._sff = SphereFlakeFactory(self._stage, self._matman, self._smf)
         self._sff.LoadSettings()
@@ -134,15 +135,18 @@ class SphereflakeBenchmarkExtension(omni.ext.IExt):
 
     def on_shutdown(self):
         global initialized_objects
-        print(f"[{self._ext_id}] SphereflakeBenchmarkExtension on_shutdown objs_inited:{initialized_objects} (trc)")
-        if initialized_objects:
-            if self._sfc is not None:
-                self._sfc.SaveSettings()
-                self._sfc.Close()
-            else:
-                print(f"on_shutdown - _sfc is None (trc) objs_inited:{initialized_objects}")
-            if self._sfw is not None:
-                self._sfw.SaveSettings()
-                self._sfw.destroy()
-            else:
-                print(f"on_shutdown - _sfw is None (trc) objs_inited:{initialized_objects}")
+        try:
+            print(f"[{self._ext_id}] SphereflakeBenchmarkExtension on_shutdown objs_inited:{initialized_objects}")
+            if initialized_objects:
+                if self._sfc is not None:
+                    self._sfc.SaveSettings()
+                    self._sfc.Close()
+                else:
+                    carb.log_error(f"on_shutdown - _sfc is Unexpectedly None objs_inited:{initialized_objects}")
+                if self._sfw is not None:
+                    self._sfw.SaveSettings()
+                    self._sfw.destroy()
+                else:
+                    carb.log_error(f"on_shutdown - _sfw is Unexpectedly None objs_inited:{initialized_objects}")
+        except Exception as e:
+            carb.log_error(f"on_shutdown - Exception: {e}")

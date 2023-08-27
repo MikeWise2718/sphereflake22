@@ -14,14 +14,15 @@ import nvidia_smi
 # import multiprocessing
 import subprocess
 import os
+import carb
 from .ovut import get_setting, save_setting
-
+import asyncio
 # import asyncio
 
 # fflake8: noqa
 
 
-def build_sf_set(stagestr: str,
+def build_sf_set(stagestr: str, 
                  sx: int = 0, nx: int = 1, nnx: int = 1,
                  sy: int = 0, ny: int = 1, nny: int = 1,
                  sz: int = 0, nz: int = 1, nnz: int = 1,
@@ -32,6 +33,14 @@ def build_sf_set(stagestr: str,
     msg = f"GMP build_sf_set  - x: {sx} {nx} {nnx} - y: {sy} {ny} {nny} - z: {sz} {nz} {nnz} mat:{matname}"
     msg += f" - stagestr: {stagestr} pid:{pid}"
 
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError as e:
+        if str(e).startswith('There is no current event loop in thread'):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        else:
+            raise
     # stage=Usd.Stage.Open(rootLayer=Sdf.Find('anon:0000014AF6CD0760:World0.usd'), sessionLayer=Sdf.Find('anon:0000014AF6CD0B20:World0-session.usda')),
 
     print(msg)
@@ -41,11 +50,12 @@ def build_sf_set(stagestr: str,
     # stage = context.open_stage(stagestr)
     smf = SphereMeshFactory(stage, matman)
     sff = SphereFlakeFactory(stage, matman, smf)
+    sff.ResetStage(stage)
     sff.p_sf_matname = matname
     sff.p_nsfx = nnx
     sff.p_nsfy = nny
     sff.p_nsfz = nnz
-    # sff.GenerateManySubcube(sx, sy, sz, nx, ny, nz)
+    sff.GenerateManySubcube(sx, sy, sz, nx, ny, nz)
     return msg
 
 
@@ -53,6 +63,7 @@ def init_sf_set():
     from omni.services.core import main
     # there seems to be no main until a window is created
     main.register_endpoint("get", "/sphereflake/build-sf-set", build_sf_set, tags=["Sphereflakes"])
+    print("init_sf_set - mail.registered_endpoint called")
 
 
 class DummyGpuInfo:
@@ -85,9 +96,15 @@ class SfControls():
     p_writelog = True
     p_logseriesname = "None"
     p_doremote = False
-    p_remotetype = 1
-    p_remoteurl = "http://localhost:8211"
+    p_doremoteurl = "http://localhost:8211"
+    p_doremotetype = "InProcess"
+
     p_register_endpoint = False
+
+    p_doloadusd = False
+    p_doloadusd_url = "omniverse://localhost/sphereflake.usd"
+    p_doloadusd_session = False
+    p_doloadusd_sessionname = "None"
 
     def __init__(self, matman: MatMan, smf: SphereMeshFactory, sff: SphereFlakeFactory):
         print("SfControls __init__ (trc)")
@@ -128,14 +145,18 @@ class SfControls():
     def LateInit(self):
         # Register endpoints
         try:
+            # D:\nv\ov\app\sfapp\_build\windows-x86_64\release\data\Kit\wise.sfapp.view\1.0>notepad user.config.json
             # from omni.core.utils.extensions import enable_extension
             # enable_extension("omni.services.core")
             # from omni.kit.window.extensions import ext_controller, enable_extension
             # enable_extension("omni.services.core")
             # ext_controller.toggle_autoload("omni.services.core", True)
+            self.query_remote_settings()
             if self.p_register_endpoint:
                 init_sf_set()
                 print("SfControls LateInit - registered endpoint")
+            else:
+                print("SfControls LateInit - did not register endpoint")
             pass
         except Exception as e:
             print(f"sfc.LateInit - Exception registering endpoint: {e}")
@@ -152,22 +173,37 @@ class SfControls():
 
     def SaveSettings(self):
         print("SfControls SaveSettings (trc)")
-        self.query_write_log()
-        self.query_remote_settings()
-        save_setting("p_writelog", self.p_writelog)
-        save_setting("p_logseriesname", self.p_logseriesname)
-        save_setting("p_doremote", self.p_doremote)
-        save_setting("p_doremotetype", self.p_doremotetype)
-        save_setting("p_doremoteurl", self.p_doremoteurl)
-        print(f"SaveSettings: doremote:{self.p_doremote} {self.p_doremotetype} {self.p_doremoteurl} (trc)")
+        try:
+            self.query_write_log()
+            self.query_remote_settings()
+            save_setting("p_writelog", self.p_writelog)
+            save_setting("p_logseriesname", self.p_logseriesname)
+            save_setting("p_doremote", self.p_doremote)
+            save_setting("p_register_endpoint", self.p_register_endpoint)
+            save_setting("p_doremotetype", self.p_doremotetype)
+            save_setting("p_doremoteurl", self.p_doremoteurl)
+            save_setting("p_doloadusd", self.p_doloadusd)
+            save_setting("p_doloadusd_url", self.p_doloadusd_url)
+            save_setting("p_doloadusd_session", self.p_doloadusd_session)
+            save_setting("p_doloadusd_sessionname", self.p_doloadusd_sessionname)
+            if self.sff is not None:
+                self.sff.SaveSettings()
+            print(f"SaveSettings: p_register_endpoint:{self.p_register_endpoint} (trc)")
+        except Exception as e:
+            carb.log_error(f"Exception in sfcontrols.SaveSettings: {e}")
 
     def LoadSettings(self):
         print("SfControls LoadSettings (trc)")
         self.p_writelog = get_setting("p_writelog", True)
         self.p_logseriesname = get_setting("p_logseriesname", "None")
         self.p_doremote = get_setting("p_doremote", False)
+        self.p_register_endpoint = get_setting("p_register_endpoint", False)
         self.p_doremotetype = get_setting("p_doremotetype", "InProcess")
         self.p_doremoteurl = get_setting("p_doremoteurl", "http://localhost")
+        self.p_doloadusd = get_setting("p_doloadusd", False)
+        self.p_doloadusd_url = get_setting("p_doloadusd_url", "omniverse://localhost/sphereflake.usd")
+        self.p_doloadusd_session = get_setting("p_doloadusd_session", False)
+        self.p_doloadusd_sessionname = get_setting("p_doloadusd_sessionname", "None")
         print(f"LoadSettings: doremote:{self.p_doremote} {self.p_doremotetype} {self.p_doremoteurl} (trc)")
 
     def setup_environment(self, extent3f: Gf.Vec3f,  force: bool = False):
@@ -255,6 +291,8 @@ class SfControls():
         sfw = self.sfw
         if sfw.doremote_checkbox_model is not None:
             self.p_doremote = self.sfw.doremote_checkbox_model.as_bool
+        if sfw.doregister_remote_checkbox_model is not None:
+            self.p_register_endpoint = self.sfw.doregister_remote_checkbox_model.as_bool
         if sfw.doremote_type_model is not None:
             idx = self.sfw.doremote_type_model.as_int
             self.p_doremotetype = self._remotetypes[idx]
@@ -266,7 +304,7 @@ class SfControls():
         self.ensure_stage()
         self._bounds_visible = not self._bounds_visible
         self.sfw._tog_bounds_but.text = f"Bounds:{self._bounds_visible}"
-        self.sff.ToggleBoundsVisiblity()
+        self.sff.ToggleBoundsVisiblity(self._bounds_visible)
 
     def on_click_billboard(self):
         self.ensure_stage()
@@ -337,6 +375,8 @@ class SfControls():
 
         if sff.p_parallelRender:
             self.query_remote_settings()
+            self._stage = omni.usd.get_context().get_stage()            
+            sff.ResetStage(self._stage)
             await sff.GenerateManyParallel(doremote=self.p_doremote,
                                            remotetype=self.p_doremotetype,
                                            remoteurl=self.p_doremoteurl)
@@ -399,6 +439,7 @@ class SfControls():
         self.setup_environment(extent3f, force=True)
 
         start_time = time.time()
+        self.sff.ResetStage(self._stage)
         await self.generate_sflakes()
         elap = time.time() - start_time
 

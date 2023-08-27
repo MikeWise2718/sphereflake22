@@ -63,6 +63,10 @@ class SphereFlakeFactory():
         self._stage = stage
         print(f"SFF initialized with stage:{stage} (trc1)")
 
+    def ResetStage(self, stage: Usd.Stage):
+        self._stage = stage
+        self._smf.ResetStage(stage)
+
     def GenPrep(self):
         self._smf.GenPrep()
         pass
@@ -355,10 +359,16 @@ class SphereFlakeFactory():
                         UsdGeom.Imageable(bnd_cube).MakeInvisible()
         return count
 
-    def ToggleBoundsVisiblity(self):
+    def ToggleBoundsVisiblity(self, soll: bool):
         # print(f"ToggleBoundsVisiblity: {self._bbcubelist}")
-        import omni.kit.commands as okc
-        okc.execute('ToggleVisibilitySelectedPrims', selected_paths=self._bbcubelist)
+        # okc.execute('ToggleVisibilitySelectedPrims', selected_paths=self._bbcubelist)
+        for path in self._bbcubelist:
+            prim = self._stage.GetPrimAtPath(path)
+            if prim is not None:
+                if soll:
+                    UsdGeom.Imageable(prim).MakeVisible()
+                else:
+                    UsdGeom.Imageable(prim).MakeInvisible()
 
     def Generate(self, sphflkname: str, cenpt: Gf.Vec3f):
 

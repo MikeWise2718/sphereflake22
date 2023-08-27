@@ -22,6 +22,10 @@ class SphereMeshFactory():
         # else:
         #     self._stage = omni.usd.get_context().get_stage()
 
+    def ResetStage(self, stage: Usd.Stage):
+        self._stage = stage
+        self._matman.ResetStage(stage)
+
     def GenPrep(self):
         self._nquads = self.p_nlat*self.p_nlng
         self._nverts = (self.p_nlat+1)*(self.p_nlng)
