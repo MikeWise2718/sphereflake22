@@ -198,7 +198,7 @@ class SfControls():
         self.p_logseriesname = get_setting("p_logseriesname", "None")
         self.p_doremote = get_setting("p_doremote", False)
         self.p_register_endpoint = get_setting("p_register_endpoint", False)
-        self.p_doremotetype = get_setting("p_doremotetype", "InProcess")
+        self.p_doremotetype = get_setting("p_doremotetype", SphereFlakeFactory.GetDefaultRemoteType())
         self.p_doremoteurl = get_setting("p_doremoteurl", "http://localhost")
         self.p_doloadusd = get_setting("p_doloadusd", False)
         self.p_doloadusd_url = get_setting("p_doloadusd_url", "omniverse://localhost/sphereflake.usd")
@@ -592,7 +592,6 @@ class SfControls():
         self.sfw._nsf_z_but.text = f"SF - z:{nsfz}"
         self.sff.p_nsfz = nsfz
         self.UpdateStuff()
-
 
     def on_click_spawnprim(self):
         self.spawnprim(self._curprim)

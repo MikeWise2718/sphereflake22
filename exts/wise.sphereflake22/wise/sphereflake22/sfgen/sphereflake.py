@@ -135,7 +135,11 @@ class SphereFlakeFactory():
 
     @staticmethod
     def GetRemoteTypes():
-        return ["InProcess", "Remote"]
+        return ["InProcess", "RemoteUrl", "RemoteProcess", "RemoteBatchFile"]
+    
+    @staticmethod
+    def GetDefaultRemoteType():
+        return "RemoteBatchFile"
 
     def Clear(self):
         self._createlist = []
@@ -221,9 +225,28 @@ class SphereFlakeFactory():
 
     def RemoteInit(self, remoteurl):
         self.tasks = []
-        self.baseurl = remoteurl
-        import aiohttp  # late import to keep it from dying at startup - probably a Kit 105 bug
-        self.session = aiohttp.ClientSession()
+        if self.remotetype == "RemoteUrl":
+            self.baseurl = remoteurl
+            import aiohttp  # late import to keep it from dying at startup - probably a Kit 105 bug
+            self.session = aiohttp.ClientSession()
+        elif self.remotetype == "RemoteBatchFile":
+            self.process_cmd_list = []
+            self.urlname = "omniverse://localhost/Users/mike/SfBase.usda"
+            self.sessname = "base1"
+            from .sfsession import LiveSessionInfo
+            rlayer = self._stage.GetRootLayer()
+            realpath = rlayer.identifier
+            if realpath is not None:
+                if realpath.startswith("omniverse://"):
+                    self._live_session_info = LiveSessionInfo(realpath)
+                    newsessname = self._live_session_info.session_name
+                    if newsessname is not None:
+                        self.sessname = newsessname
+                    else:
+                        carb.log_error(f"RemoteInit Error - session name is none ")
+                    self.urlname = realpath
+                else:
+                    carb.log_error(f"RemoteInit Error - stage is not from a nucleus session: {realpath}")
 
     async def RemoteFetch(self, sx, sy, sz, nx, ny, nz, nnx, nny, nnz):
         url = f"{self.baseurl}"
@@ -236,10 +259,18 @@ class SphereFlakeFactory():
         async with self.session.get(url) as response:
             return await response.text()
 
-    def RemoteCreateTask(self, sx, sy, sz, nx, ny, nz, nnx, nny, nnz):
-        t = asyncio.create_task(self.RemoteFetch(sx, sy, sz, nx, ny, nz, nnx, nny, nnz))
-        t.add_done_callback(self.tasks.remove)
-        self.tasks.append(t)
+    def RemoteCreateTask(self, ib, sx, sy, sz, nx, ny, nz, nnx, nny, nnz):
+        if self.remotetype == "RemoteUrl":
+            t = asyncio.create_task(self.RemoteFetch(sx, sy, sz, nx, ny, nz, nnx, nny, nnz))
+            t.add_done_callback(self.tasks.remove)
+            self.tasks.append(t)
+        elif self.remotetype == "RemoteBatchFile":
+            cmd = f"start /b \"{ib}\" run_sfseeder -u {self.urlname} -n {self.sessname} -p "
+            cmd += f"i={ib},matname={self.p_sf_matname}"
+            cmd += f",sx={sx},nx={nx},nnx={nnx}"
+            cmd += f",sy={sy},ny={ny},nny={nny}"
+            cmd += f",sz={sz},nz={nz},nnz={nnz}"
+            self.process_cmd_list.append(cmd)
 
     async def RemoteClose(self):
         print(f"GMP: sf_ waiting for tasks to complete ln:{len(self.tasks)}")
@@ -249,7 +280,14 @@ class SphereFlakeFactory():
         for txt in rettxts:
             print(f"GMP: sf_ txt {i}:{txt}")
             i += 1
-        await self.session.close()
+        if self.remotetype == "RemoteUrl":
+            await self.session.close()
+        elif self.remotetype == "RemoteBatchFile":
+            cmds = "\n".join(self.process_cmd_list)
+            path = "d:/nv/ov/app/ovcon/"
+            filename = f"{path}sphereflake_cmdlist.txt"
+            with open(filename, "w") as f:
+                f.write(cmds)
 
     async def GenerateManyParallel(self, doremote: bool = False, remotetype: str = "---", remoteurl: str = "http://localhost:8211/sphereflake/build-sf-set"):
         nxchunk = math.ceil(self.p_nsfx / self.p_parallel_nxbatch)
@@ -274,6 +312,7 @@ class SphereFlakeFactory():
         self._createlist = []
         self._bbcubelist = []
         if doremote:
+            self.remotetype = remotetype
             self.RemoteInit(remoteurl)
         for iix in range(self.p_parallel_nxbatch):
             for iiy in range(self.p_parallel_nybatch):
@@ -297,7 +336,7 @@ class SphereFlakeFactory():
                     ny = min(ny, nny-sy)
                     nz = min(nz, nnz-sz)
                     if doremote:
-                        self.RemoteCreateTask(sx, sy, sz, nx, ny, nz, nnx, nny, nnz)
+                        self.RemoteCreateTask(ibatch, sx, sy, sz, nx, ny, nz, nnx, nny, nnz)
                         sfcount += nx*ny*nz
                     else:
                         sfcount += self.GenerateManySubcube(sx, sy, sz, nx, ny, nz)

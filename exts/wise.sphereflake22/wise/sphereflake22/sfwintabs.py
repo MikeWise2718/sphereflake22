@@ -266,7 +266,7 @@ class SfcTabOptions(BaseTab):
                         sfw.writelog_seriesname = ui.StringField(model=sfw.writelog_seriesname_model,
                                                                  width=200, height=20, visible=True)
 
-            sfw.optremoteframe = ui.CollapsableFrame("Remote", collapsed=sfw.docollapse_optremoteframe)
+            sfw.optremoteframe = ui.CollapsableFrame("Remote Processing", collapsed=sfw.docollapse_optremoteframe)
             with sfw.optremoteframe:
                 with ui.VStack(style={"margin": sfw.marg}):
                     with ui.HStack():
