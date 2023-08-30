@@ -6,6 +6,7 @@ import json
 import socket
 import psutil
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade
+from pxr import UsdPhysics, PhysxSchema, Gf, PhysicsSchemaTools, UsdGeom
 from .ovut import delete_if_exists, write_out_syspath, truncf
 from .sfgen.sfut import MatMan
 from .sfgen.spheremesh import SphereMeshFactory
@@ -22,7 +23,7 @@ import asyncio
 # fflake8: noqa
 
 
-def build_sf_set(stagestr: str, 
+def build_sf_set(stagestr: str,
                  sx: int = 0, nx: int = 1, nnx: int = 1,
                  sy: int = 0, ny: int = 1, nny: int = 1,
                  sz: int = 0, nz: int = 1, nnz: int = 1,
@@ -106,6 +107,10 @@ class SfControls():
     p_doloadusd_session = False
     p_doloadusd_sessionname = "None"
 
+    p_addcolliders = False
+
+    currenttag = "Empty"
+
     def __init__(self, matman: MatMan, smf: SphereMeshFactory, sff: SphereFlakeFactory):
         print("SfControls __init__ (trc)")
 
@@ -176,6 +181,7 @@ class SfControls():
         try:
             self.query_write_log()
             self.query_remote_settings()
+            self.query_physics()
             save_setting("p_writelog", self.p_writelog)
             save_setting("p_logseriesname", self.p_logseriesname)
             save_setting("p_doremote", self.p_doremote)
@@ -186,9 +192,10 @@ class SfControls():
             save_setting("p_doloadusd_url", self.p_doloadusd_url)
             save_setting("p_doloadusd_session", self.p_doloadusd_session)
             save_setting("p_doloadusd_sessionname", self.p_doloadusd_sessionname)
+            save_setting("p_addcolliders", self.p_addcolliders)
             if self.sff is not None:
                 self.sff.SaveSettings()
-            print(f"SaveSettings: p_register_endpoint:{self.p_register_endpoint} (trc)")
+            print(f"SaveSettings: p_addcolliders:{self.p_addcolliders} (trc)")
         except Exception as e:
             carb.log_error(f"Exception in sfcontrols.SaveSettings: {e}")
 
@@ -204,7 +211,8 @@ class SfControls():
         self.p_doloadusd_url = get_setting("p_doloadusd_url", "omniverse://localhost/sphereflake.usd")
         self.p_doloadusd_session = get_setting("p_doloadusd_session", False)
         self.p_doloadusd_sessionname = get_setting("p_doloadusd_sessionname", "None")
-        print(f"LoadSettings: doremote:{self.p_doremote} {self.p_doremotetype} {self.p_doremoteurl} (trc)")
+        self.p_addcolliders = get_setting("p_addcolliders", False)
+        print(f"LoadSettings: p_addcolliders:{self.p_addcolliders}  (trc)")
 
     def setup_environment(self, extent3f: Gf.Vec3f,  force: bool = False):
         ppathstr = "/World/Floor"
@@ -223,6 +231,10 @@ class SfControls():
             stage = omni.usd.get_context().get_stage()
             prim: Usd.Prim = stage.GetPrimAtPath(ppathstr)
             UsdShade.MaterialBindingAPI(prim).Bind(mtl)
+            if self.p_addcolliders:
+                # rigid_api = UsdPhysics.RigidBodyAPI.Apply(prim)
+                # rigid_api.CreateRigidBodyEnabledAttr(True)
+                UsdPhysics.CollisionAPI.Apply(prim)
 
             # self._floor_xdim = extent3f[0] / 10
             # self._floor_zdim = extent3f[2] / 10
@@ -285,7 +297,11 @@ class SfControls():
     def query_write_log(self):
         self.p_writelog = self.sfw.writelog_checkbox_model.as_bool
         self.p_logseriesname = self.sfw.writelog_seriesname_model.as_string
-        print(f"querey_write_log is now:{self.p_writelog} name:{self.p_logseriesname}")
+        print(f"query_write_log is now:{self.p_writelog} name:{self.p_logseriesname}")
+
+    def query_physics(self):
+        self.p_addcolliders = self.sfw.addcolliders_checkbox_model.as_bool
+        print(f"add colliders is now:{self.p_addcolliders}")
 
     def query_remote_settings(self):
         sfw = self.sfw
@@ -372,10 +388,13 @@ class SfControls():
 
         sff.p_make_bounds_visible = self._bounds_visible
         sff.p_bb_matname = self.get_curmat_bbox_name()
+        sff.p_tag = self.currenttag
+        self.query_physics()
+        sff.p_addcolliders = self.p_addcolliders
 
         if sff.p_parallelRender:
             self.query_remote_settings()
-            self._stage = omni.usd.get_context().get_stage()            
+            self._stage = omni.usd.get_context().get_stage()      
             sff.ResetStage(self._stage)
             await sff.GenerateManyParallel(doremote=self.p_doremote,
                                            remotetype=self.p_doremotetype,
@@ -410,6 +429,7 @@ class SfControls():
             rundict = {"0-seriesname": self.p_logseriesname,
                        "0-hostname": hostname,
                        "0-date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                       "0-tag": self.currenttag,
                        "1-genmode": self.sff.p_genmode,
                        "1-genform": self.sff.p_genform,
                        "1-depth": self.sff.p_depth,
@@ -440,6 +460,9 @@ class SfControls():
 
         start_time = time.time()
         self.sff.ResetStage(self._stage)
+        hostname = socket.gethostname()
+        datestr = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        self.currenttag = f"{hostname}-{datestr}"
         await self.generate_sflakes()
         elap = time.time() - start_time
 

@@ -4,7 +4,6 @@ from ._widgets import BaseTab
 from .sfgen.sphereflake import SphereFlakeFactory
 from .sfcontrols import SfControls
 from .sfwindow import SfcWindow
-import os
 
 
 class SfcTabMulti(BaseTab):
@@ -291,3 +290,26 @@ class SfcTabOptions(BaseTab):
                                                           width=400, height=20, visible=True)
 
 
+class SfcTabPhysics(BaseTab):
+    sfw: SfcWindow
+    sfc: SfControls
+
+    def __init__(self, sfw: SfcWindow):
+        super().__init__("Physics")
+        self.sfw = sfw
+        self.sfc = sfw.sfc
+        # print("SfcTabOptions.build_fn {sfc}")
+
+    def build_fn(self):
+        # print("SfcTabOptions.build_fn (trc)")
+        sfw = self.sfw
+        sfc = self.sfc # noqa : F841
+
+        with ui.VStack(style={"margin": sfw.marg}):
+            sfw.physcollidersframe = ui.CollapsableFrame("Colliders", collapsed=sfw.docollapse_physcollidersframe)
+            with sfw.physcollidersframe:
+                with ui.VStack(style={"margin": sfw.marg}):
+                    with ui.HStack():
+                        ui.Label("Add Colliders: ")
+                        sfw.addcolliders_checkbox = ui.CheckBox(model=sfw.addcolliders_checkbox_model,
+                                                                width=40, height=10, name="addcolliders", visible=True)

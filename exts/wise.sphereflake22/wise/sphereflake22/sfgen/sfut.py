@@ -192,15 +192,18 @@ class MatMan():
         return mtl
 
     def RealizeMaterial(self, matname: str):
-        typ = self.matlib[matname]["typ"]
-        spec = self.matlib[matname]["spec"]
-        if typ == "mtl":
-            self.CopyRemoteMaterial(matname, spec)
-        elif typ == "tex":
-            self.MakePreviewSurfaceTexMateral(matname, spec)
-        else:
-            self.MakePreviewSurfaceMaterial(matname, spec)
-        self.matlib[matname]["realized"] = True
+        try:
+            typ = self.matlib[matname]["typ"]
+            spec = self.matlib[matname]["spec"]
+            if typ == "mtl":
+                self.CopyRemoteMaterial(matname, spec)
+            elif typ == "tex":
+                self.MakePreviewSurfaceTexMateral(matname, spec)
+            else:
+                self.MakePreviewSurfaceMaterial(matname, spec)
+            self.matlib[matname]["realized"] = True
+        except Exception as e:
+            carb.log_error(f"Exception in RealizeMaterial {matname} : {e}")
 
     def SetupMaterial(self, matname: str, typ: str, spec: str):
         # print(f"SetupMaterial {matname} {typ} {spec}")
@@ -225,8 +228,20 @@ class MatMan():
         self.SetupMaterial("Red_Glass", "mtl", "Base/Glass/Red_Glass")
         self.SetupMaterial("Green_Glass", "mtl", "Base/Glass/Green_Glass")
         self.SetupMaterial("Clear_Glass", "mtl", "Base/Glass/Clear_Glass")
+        self.SetupMaterial("Bronze", "mtl", "Base/Metals/Bronze")
+        self.SetupMaterial("Brass", "mtl", "Base/Metals/Brass")
+        self.SetupMaterial("Gold", "mtl", "Base/Metals/Gold")
+        self.SetupMaterial("Silver", "mtl", "Base/Metals/Silver")
+        self.SetupMaterial("Iron", "mtl", "Base/Metals/Iron")
+        self.SetupMaterial("Steel_Stainless", "mtl", "Base/Metals/Steel_Stainless")
+        self.SetupMaterial("Orange_Glass", "mtl", "vMaterials_2/Glass/Glass_Colored")
         self.SetupMaterial("Mirror", "mtl", "Base/Glass/Mirror")
         self.SetupMaterial("sunset_texture", "tex", "sunset.png")
+        self.SetupMaterial("Andromeda", "mtl", "vMaterials_2/Paint/Carpaint/Carpaint_Shifting_Flakes")
+
+    def Reinitialize(self):
+        for key in self.matlib:
+            self.matlib[key]["realized"] = False
 
     def GetMaterialNames(self) -> List[str]:
         return list(self.matlib.keys())

@@ -25,6 +25,7 @@ class SfcWindow(ui.Window):
     # Sphereflake params
     prframe: ui.CollapsableFrame = None
     drframe: ui.CollapsableFrame = None
+    physcollidersframe: ui.CollapsableFrame = None
     optlogframe: ui.CollapsableFrame = None
     optremoteframe: ui.CollapsableFrame = None
     optstartupframe: ui.CollapsableFrame = None
@@ -32,6 +33,7 @@ class SfcWindow(ui.Window):
     docollapse_prframe = False
     docollapse_drframe = False
     docollapse_optlogframe = False
+    docollapse_physcollidersframe = False
     docollapse_optremoteframe = False
     docollapse_optstartupframe = False
 
@@ -84,6 +86,9 @@ class SfcWindow(ui.Window):
     doloadusd_session_checkbox_model: ui.SimpleBoolModel = None
     doloadusd_sessionname: ui.StringField = None
     doloadusd_sessionname_model: ui.SimpleStringModel = None
+
+    # Physic
+    addcolliders_checkbox_model: ui.SimpleBoolModel = None
 
     # state
     sfc: SfControls
@@ -146,14 +151,17 @@ class SfcWindow(ui.Window):
         self.doremote_url_model = ui.SimpleStringModel(sfc.p_doremoteurl)
         self.doloadusd_sessionname_model = ui.SimpleStringModel(sfc.p_doloadusd_sessionname)
         self.doloadusd_url_model = ui.SimpleStringModel(sfc.p_doloadusd_url)
-        
+
+        self.addcolliders_checkbox_model = ui.SimpleBoolModel(sfc.p_addcolliders)
+
         self.doregister_remote_checkbox_model = ui.SimpleBoolModel(sfc.p_register_endpoint)
 
     def BuildWindow(self):
         print("SfcWindow.BuildWindow  (trc1)")
         sfc = self.sfc
         sfw = self
-        from .sfwintabs import SfcTabMulti, SfcTabSphereFlake, SfcTabShapes, SfcTabMaterials, SfcTabOptions
+        from .sfwintabs import SfcTabMulti, SfcTabSphereFlake, SfcTabShapes, SfcTabMaterials
+        from .sfwintabs import SfcTabOptions, SfcTabPhysics
         from .sfwinsess import SfcTabSessionInfo
 
         with self.frame:
@@ -163,9 +171,10 @@ class SfcWindow(ui.Window):
                 t3 = SfcTabShapes(self)
                 t4 = SfcTabMaterials(self)
                 t5 = SfcTabOptions(self)
-                t6 = SfcTabSessionInfo(self)
+                t6 = SfcTabPhysics(self)
+                t7 = SfcTabSessionInfo(self)
                 print("Creating Tab Group  (trc1)")
-                self.tab_group = TabGroup([t1, t2, t3, t4, t5, t6])
+                self.tab_group = TabGroup([t1, t2, t3, t4, t5, t6, t7])
                 if self.start_tab_idx is not None:
                     self.tab_group.select_tab(self.start_tab_idx)
                 with ui.HStack():
@@ -218,6 +227,7 @@ class SfcWindow(ui.Window):
         print("SfcWindow.LoadSettings (trc1)")
         self.docollapse_prframe = get_setting("ui_pr_frame_collapsed", False)
         self.docollapse_drframe = get_setting("ui_dr_frame_collapsed", False)
+        self.docollapse_physcollidersframe = get_setting("ui_phys_collidersframe", False)
         self.docollapse_optlogframe = get_setting("ui_opt_logframe", False)
         self.docollapse_optremoteframe = get_setting("ui_opt_remoteframe", False)
         self.docollapse_optstartupframe = get_setting("ui_opt_startupframe", False)
@@ -232,6 +242,8 @@ class SfcWindow(ui.Window):
                 save_setting("ui_pr_frame_collapsed", self.prframe.collapsed)
             if (self.drframe is not None):
                 save_setting("ui_dr_frame_collapsed", self.drframe.collapsed)
+            if (self.physcollidersframe is not None):
+                save_setting("ui_phys_collidersframe", self.physcollidersframe.collapsed)
             if (self.optlogframe is not None):
                 save_setting("ui_opt_logframe", self.optlogframe.collapsed)
             if (self.optremoteframe is not None):

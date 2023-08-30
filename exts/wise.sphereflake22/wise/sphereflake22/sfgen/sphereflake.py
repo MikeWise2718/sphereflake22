@@ -2,7 +2,9 @@ import carb
 import time
 import asyncio
 import math
+import socket
 from pxr import Gf, Usd, UsdGeom, UsdShade
+from pxr import UsdPhysics, PhysxSchema, Gf, PhysicsSchemaTools, UsdGeom
 from .spheremesh import SphereMeshFactory
 from .sfut import MatMan, get_setting, save_setting
 
@@ -46,6 +48,8 @@ class SphereFlakeFactory():
     p_sf_alt_matname = "Red_Glass"
     p_bb_matname = "Blue_Glass"
     p_make_bounds_visible = False
+    p_tag = None
+    p_addcolliders = False
     _start_time = 0
     _createlist: list = []
     _bbcubelist: list = []
@@ -233,18 +237,18 @@ class SphereFlakeFactory():
             self.process_cmd_list = []
             self.urlname = "omniverse://localhost/Users/mike/SfBase.usda"
             self.sessname = "base1"
-            from .sfsession import LiveSessionInfo
+            if self.p_tag is None:
+                hostname = socket.gethostname()
+                datestr = time.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                self.p_tag = f"{hostname}-{datestr}"
             rlayer = self._stage.GetRootLayer()
             realpath = rlayer.identifier
             if realpath is not None:
                 if realpath.startswith("omniverse://"):
-                    self._live_session_info = LiveSessionInfo(realpath)
-                    newsessname = self._live_session_info.session_name
-                    if newsessname is not None:
-                        self.sessname = newsessname
-                    else:
-                        carb.log_error(f"RemoteInit Error - session name is none ")
                     self.urlname = realpath
+                    from .sfsession import fish_out_session_name
+                    self.sessname = fish_out_session_name(self._stage)
+                    print(f"RemoteInit: urlname:{self.urlname} fished-out sessname:{self.sessname}")  
                 else:
                     carb.log_error(f"RemoteInit Error - stage is not from a nucleus session: {realpath}")
 
@@ -266,10 +270,13 @@ class SphereFlakeFactory():
             self.tasks.append(t)
         elif self.remotetype == "RemoteBatchFile":
             cmd = f"start /b \"{ib}\" run_sfseeder -u {self.urlname} -n {self.sessname} -p "
-            cmd += f"i={ib},matname={self.p_sf_matname}"
+            cmd += f"i={ib},matname={self.p_sf_matname},bbmatname={self.p_bb_matname}"
             cmd += f",sx={sx},nx={nx},nnx={nnx}"
             cmd += f",sy={sy},ny={ny},nny={nny}"
             cmd += f",sz={sz},nz={nz},nnz={nnz}"
+            cmd += f",form={self.p_genform},mode={self.p_genmode},depth={self.p_depth}"
+            cmd += f",rad={self.p_rad},radratio={self.p_radratio:.4f}"
+            cmd += f",tag={self.p_tag},logdir=d:/nv/ov/log/"
             self.process_cmd_list.append(cmd)
 
     async def RemoteClose(self):
@@ -285,11 +292,12 @@ class SphereFlakeFactory():
         elif self.remotetype == "RemoteBatchFile":
             cmds = "\n".join(self.process_cmd_list)
             path = "d:/nv/ov/app/ovcon/"
-            filename = f"{path}sphereflake_cmdlist.txt"
+            filename = f"{path}sphereflake_cmdlist.bat"
             with open(filename, "w") as f:
                 f.write(cmds)
 
-    async def GenerateManyParallel(self, doremote: bool = False, remotetype: str = "---", remoteurl: str = "http://localhost:8211/sphereflake/build-sf-set"):
+    async def GenerateManyParallel(self, doremote: bool = False, remotetype: str = "---",
+                                   remoteurl: str = "http://localhost:8211/sphereflake/build-sf-set"):
         nxchunk = math.ceil(self.p_nsfx / self.p_parallel_nxbatch)
         nychunk = math.ceil(self.p_nsfy / self.p_parallel_nybatch)
         nzchunk = math.ceil(self.p_nsfz / self.p_parallel_nzbatch)
@@ -297,6 +305,12 @@ class SphereFlakeFactory():
         nny = self.p_nsfy
         nnz = self.p_nsfz
         print(f"GMP: nnx:{nnx} nny:{nny} nnz:{nnz} remote:{doremote} type:{remotetype} url:{remoteurl} (trc))")
+
+        # realize all configured materials
+        self._matman.GetMaterial(self.p_sf_matname)
+        self._matman.GetMaterial(self.p_sf_alt_matname)
+        self._matman.GetMaterial(self.p_bb_matname)
+
         original_matname = self.p_sf_matname
         original_alt_matname = self.p_sf_alt_matname
 
@@ -309,6 +323,7 @@ class SphereFlakeFactory():
         # available_trans_async = omni.services.client.get_available_transports(is_async=True)
         # # availprot = omni.services.client.get_available_protocols()
         # client = omni.services.client.AsyncClient("http://localhost:8211/sphereflake")
+
         self._createlist = []
         self._bbcubelist = []
         if doremote:
@@ -475,9 +490,16 @@ class SphereFlakeFactory():
             sz = rad
             UsdGeom.XformCommonAPI(xformPrim).SetTranslate((cenpt[0], cenpt[1], cenpt[2]))
             UsdGeom.XformCommonAPI(xformPrim).SetScale((sz, sz, sz))
-            spheremesh = UsdGeom.Sphere.Define(stage, meshname)
+            spheregeom = UsdGeom.Sphere.Define(stage, meshname)
             mtl = self._matman.GetMaterial(matname)
-            UsdShade.MaterialBindingAPI(spheremesh).Bind(mtl)
+            UsdShade.MaterialBindingAPI(spheregeom).Bind(mtl)
+            if self.p_addcolliders:
+                spherePrim = stage.GetPrimAtPath(meshname)
+                rigid_api = UsdPhysics.RigidBodyAPI.Apply(spherePrim)
+                # rigid_api.SetMassAttr(1.0)
+                # rigid_api.SetRestitutionAttr(0.5)
+                rigid_api.CreateRigidBodyEnabledAttr(True)
+                UsdPhysics.CollisionAPI.Apply(spherePrim)
 
         if depth > 0:
             form = self.p_genform

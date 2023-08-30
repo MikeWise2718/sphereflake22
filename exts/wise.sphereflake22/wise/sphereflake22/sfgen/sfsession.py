@@ -67,3 +67,14 @@ class LiveSessionInfo:
         live_session_channel_path = self.get_live_session_folder_path() + "/" + self.OMNIVERSE_CHANNEL_FILE_NAME
         live_session_url = omni.client.make_url(self.omni_url.scheme, self.omni_url.user, self.omni_url.host, self.omni_url.port, live_session_channel_path)
         return live_session_url
+
+
+def fish_out_session_name(stage):
+    slayer = stage.GetSessionLayer()
+    slayersubs = slayer.GetLoadedLayers()
+    for sl in slayersubs:
+        if sl.identifier.endswith(".live"):
+            chunks = sl.identifier.split("/")
+            session_name = chunks[-2].split(".")[0]
+            return session_name
+    return None
