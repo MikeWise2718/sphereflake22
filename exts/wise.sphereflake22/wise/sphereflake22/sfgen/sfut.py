@@ -239,6 +239,9 @@ class MatMan():
         self.SetupMaterial("sunset_texture", "tex", "sunset.png")
         self.SetupMaterial("Andromeda", "mtl", "vMaterials_2/Paint/Carpaint/Carpaint_Shifting_Flakes")
 
+    def GetMaterialCount(self):
+        return len(self.matlib)
+
     def Reinitialize(self):
         for key in self.matlib:
             self.matlib[key]["realized"] = False

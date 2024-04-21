@@ -7,7 +7,7 @@ from .ovut import get_setting, save_setting
 import carb
 
 
-class SfcWindow(ui.Window):
+class SfWindow(ui.Window):
 
     darkgreen = clr("#004000")
     darkblue = clr("#000040")
@@ -28,6 +28,7 @@ class SfcWindow(ui.Window):
     physcollidersframe: ui.CollapsableFrame = None
     optlogframe: ui.CollapsableFrame = None
     optremoteframe: ui.CollapsableFrame = None
+    optgroundframe: ui.CollapsableFrame = None
     optstartupframe: ui.CollapsableFrame = None
 
     docollapse_prframe = False
@@ -35,6 +36,7 @@ class SfcWindow(ui.Window):
     docollapse_optlogframe = False
     docollapse_physcollidersframe = False
     docollapse_optremoteframe = False
+    docollapse_optgroundframe = False
     docollapse_optstartupframe = False
 
     _sf_depth_but: ui.Button = None
@@ -87,8 +89,12 @@ class SfcWindow(ui.Window):
     doloadusd_sessionname: ui.StringField = None
     doloadusd_sessionname_model: ui.SimpleStringModel = None
 
-    # Physic
-    addcolliders_checkbox_model: ui.SimpleBoolModel = None
+    # Ground
+    addrand_checkbox: ui.CheckBox = None
+    addrand_checkbox_model: ui.SimpleBoolModel = None
+
+    # Physics
+    equipforphysics_checkbox_model: ui.SimpleBoolModel = None
 
     # state
     sfc: SfControls
@@ -98,8 +104,8 @@ class SfcWindow(ui.Window):
     def __init__(self, *args, **kwargs):
         self.wintitle = "SphereFlake Controls"
         super().__init__(title=self.wintitle, height=300, width=300,  *args, **kwargs)
-        print("SfcWindow.__init__ (trc)")
-        # print("SfcWindow.__init__ (trc)")
+        print("SfWindow.__init__ (trc)")
+        # print("SfWindow.__init__ (trc)")
         self.sfc = kwargs["sfc"]
         self.sfc.sfw = self  # intentionally circular
         self.smf = self.sfc.smf
@@ -152,12 +158,15 @@ class SfcWindow(ui.Window):
         self.doloadusd_sessionname_model = ui.SimpleStringModel(sfc.p_doloadusd_sessionname)
         self.doloadusd_url_model = ui.SimpleStringModel(sfc.p_doloadusd_url)
 
-        self.addcolliders_checkbox_model = ui.SimpleBoolModel(sfc.p_addcolliders)
+        self.equipforphysics_checkbox_model = ui.SimpleBoolModel(sfc.p_equipforphysics)
 
         self.doregister_remote_checkbox_model = ui.SimpleBoolModel(sfc.p_register_endpoint)
 
+        # Ground
+        self.addrand_checkbox_model = ui.SimpleBoolModel(sfc.p_addrand)
+
     def BuildWindow(self):
-        print("SfcWindow.BuildWindow  (trc1)")
+        print("SfWindow.BuildWindow  (trc1)")
         sfc = self.sfc
         sfw = self
         from .sfwintabs import SfcTabMulti, SfcTabSphereFlake, SfcTabShapes, SfcTabMaterials
@@ -224,35 +233,37 @@ class SfcWindow(ui.Window):
         self.deferred_dock_in(wintitle, ui._ui.DockPolicy.TARGET_WINDOW_IS_ACTIVE)
 
     def LoadSettings(self):
-        print("SfcWindow.LoadSettings (trc1)")
+        # print("SfWindow.LoadSettings (trc1)")
         self.docollapse_prframe = get_setting("ui_pr_frame_collapsed", False)
         self.docollapse_drframe = get_setting("ui_dr_frame_collapsed", False)
         self.docollapse_physcollidersframe = get_setting("ui_phys_collidersframe", False)
         self.docollapse_optlogframe = get_setting("ui_opt_logframe", False)
+        self.docollapse_optgroundframe = get_setting("ui_opt_groundframe", False)
         self.docollapse_optremoteframe = get_setting("ui_opt_remoteframe", False)
         self.docollapse_optstartupframe = get_setting("ui_opt_startupframe", False)
         self.start_tab_idx = get_setting("ui_selected_tab", 0)
-        print(f"SfcWindow.LoadSettings start_tab_idx:{self.start_tab_idx} (trc1)")
-        # print(f"docollapse_prframe: {self.docollapse_prframe} docollapse_drframe: {self.docollapse_drframe}")
+        # print(f"SfWindow.LoadSettings start_tab_idx:{self.start_tab_idx} (trc1)")
+
+    def SafeSaveFrame(self, name, frame: ui.CollapsableFrame):
+        try:
+            if frame is not None:
+                save_setting(name, frame.collapsed)
+        except Exception as e:
+            carb.log_error(f"Exception in SfWindow.SafeSaveFrame - name:{name}: {e}")
 
     def SaveSettings(self):
         try:
-            # print("SfcWindow.SaveSettings")
-            if (self.prframe is not None):
-                save_setting("ui_pr_frame_collapsed", self.prframe.collapsed)
-            if (self.drframe is not None):
-                save_setting("ui_dr_frame_collapsed", self.drframe.collapsed)
-            if (self.physcollidersframe is not None):
-                save_setting("ui_phys_collidersframe", self.physcollidersframe.collapsed)
-            if (self.optlogframe is not None):
-                save_setting("ui_opt_logframe", self.optlogframe.collapsed)
-            if (self.optremoteframe is not None):
-                save_setting("ui_opt_remoteframe", self.optremoteframe.collapsed)
-            if (self.optstartupframe is not None):
-                save_setting("ui_opt_startupframe", self.optstartupframe.collapsed)
+            # print("SfWindow.SaveSettings")
+            self.SafeSaveFrame("ui_pr_frame_collapsed", self.prframe)
+            self.SafeSaveFrame("ui_dr_frame_collapsed", self.drframe)
+            self.SafeSaveFrame("ui_phys_collidersframe", self.physcollidersframe)
+            self.SafeSaveFrame("ui_opt_logframe", self.optlogframe)
+            self.SafeSaveFrame("ui_opt_groundframe", self.optgroundframe)
+            self.SafeSaveFrame("ui_opt_remoteframe", self.optremoteframe)
+            self.SafeSaveFrame("ui_opt_startupframe", self.optstartupframe)
             curidx = self.tab_group.get_selected_tab_index()
             save_setting("ui_selected_tab", curidx)
             print(f"SaveSettings - ui_selected_tab:{curidx} (trc1)")
         except Exception as e:
-            carb.log_error(f"Exception in SfcWindow.SaveSettings: {e}")
+            carb.log_error(f"Exception in SfWindow.SaveSettings: {e}")
         # print(f"docollapse_prframe: {self.prframe.collapsed} docollapse_drframe: {self.drframe.collapsed}")

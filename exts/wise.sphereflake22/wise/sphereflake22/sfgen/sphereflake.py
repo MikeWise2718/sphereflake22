@@ -49,7 +49,7 @@ class SphereFlakeFactory():
     p_bb_matname = "Blue_Glass"
     p_make_bounds_visible = False
     p_tag = None
-    p_addcolliders = False
+    p_equipforphysics = False
     _start_time = 0
     _createlist: list = []
     _bbcubelist: list = []
@@ -140,7 +140,7 @@ class SphereFlakeFactory():
     @staticmethod
     def GetRemoteTypes():
         return ["InProcess", "RemoteUrl", "RemoteProcess", "RemoteBatchFile"]
-    
+
     @staticmethod
     def GetDefaultRemoteType():
         return "RemoteBatchFile"
@@ -248,7 +248,7 @@ class SphereFlakeFactory():
                     self.urlname = realpath
                     from .sfsession import fish_out_session_name
                     self.sessname = fish_out_session_name(self._stage)
-                    print(f"RemoteInit: urlname:{self.urlname} fished-out sessname:{self.sessname}")  
+                    print(f"RemoteInit: urlname:{self.urlname} fished-out sessname:{self.sessname}")
                 else:
                     carb.log_error(f"RemoteInit Error - stage is not from a nucleus session: {realpath}")
 
@@ -420,7 +420,8 @@ class SphereFlakeFactory():
             prim = self._stage.GetPrimAtPath(path)
             if prim is not None:
                 if soll:
-                    UsdGeom.Imageable(prim).MakeVisible()
+                    # UsdGeom.Imageable(prim).MakeVisible()
+                    UsdGeom.Imageable(prim).GetVisibilityAttr().Set('inherited')
                 else:
                     UsdGeom.Imageable(prim).MakeInvisible()
 
@@ -493,7 +494,8 @@ class SphereFlakeFactory():
             spheregeom = UsdGeom.Sphere.Define(stage, meshname)
             mtl = self._matman.GetMaterial(matname)
             UsdShade.MaterialBindingAPI(spheregeom).Bind(mtl)
-            if self.p_addcolliders:
+            print(f"GenRecursively - equipforphysics: {self.p_equipforphysics}")
+            if self.p_equipforphysics:
                 spherePrim = stage.GetPrimAtPath(meshname)
                 rigid_api = UsdPhysics.RigidBodyAPI.Apply(spherePrim)
                 # rigid_api.SetMassAttr(1.0)

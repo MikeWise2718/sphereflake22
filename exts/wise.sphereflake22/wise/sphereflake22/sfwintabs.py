@@ -3,15 +3,15 @@ import asyncio
 from ._widgets import BaseTab
 from .sfgen.sphereflake import SphereFlakeFactory
 from .sfcontrols import SfControls
-from .sfwindow import SfcWindow
+from .sfwindow import SfWindow
 
 
 class SfcTabMulti(BaseTab):
 
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Multi")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -19,7 +19,7 @@ class SfcTabMulti(BaseTab):
 
     def build_fn(self):
         # print("SfcTabMulti.build_fn (trc)")
-        sfw: SfcWindow = self.sfw
+        sfw: SfWindow = self.sfw
         sfc: SfControls = self.sfc
         sff: SphereFlakeFactory = self.sfw.sff
         # print(f"SfcTabMulti.build_fn {type(sfc)}")
@@ -103,7 +103,7 @@ class SfcTabSphereFlake(BaseTab):
 
     sfc: SfControls = None
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("SphereFlake")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -163,10 +163,10 @@ class SfcTabSphereFlake(BaseTab):
 
 class SfcTabShapes(BaseTab):
 
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Shapes")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -189,10 +189,10 @@ class SfcTabShapes(BaseTab):
 
 
 class SfcTabMaterials(BaseTab):
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Materials")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -236,12 +236,16 @@ class SfcTabMaterials(BaseTab):
                 sfw._sf_floor_matbox = ui.ComboBox(idx, *sfc._matkeys)
                 sfw._sf_floor_matbox_model = sfw._sf_floor_matbox.model.get_item_value_model()
 
+            sfw.reset_materials_but = ui.Button(f"Reset Materials",
+                                                style={'background_color': sfw.darkpurple},
+                                                clicked_fn=lambda: sfc.on_click_resetmaterials())
+
 
 class SfcTabOptions(BaseTab):
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Options")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -289,12 +293,20 @@ class SfcTabOptions(BaseTab):
                         sfw.doremote_url = ui.StringField(model=sfw.doremote_url_model,
                                                           width=400, height=20, visible=True)
 
+            sfw.optgroundframe = ui.CollapsableFrame("Ground Settings", collapsed=sfw.docollapse_optremoteframe)
+            with sfw.optgroundframe:
+                with ui.VStack(style={"margin": sfw.marg}):
+                    with ui.HStack():
+                        ui.Label("Add Rand")
+                        sfw.addrand_checkbox = ui.CheckBox(model=sfw.addrand_checkbox_model,
+                                                            width=40, height=10, name="addrand", visible=True)
+
 
 class SfcTabPhysics(BaseTab):
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Physics")
         self.sfw = sfw
         self.sfc = sfw.sfc
@@ -310,6 +322,7 @@ class SfcTabPhysics(BaseTab):
             with sfw.physcollidersframe:
                 with ui.VStack(style={"margin": sfw.marg}):
                     with ui.HStack():
-                        ui.Label("Add Colliders: ")
-                        sfw.addcolliders_checkbox = ui.CheckBox(model=sfw.addcolliders_checkbox_model,
-                                                                width=40, height=10, name="addcolliders", visible=True)
+                        ui.Label("Equip Objects for Phyics: ")
+                        sfw.equipforphysics_checkbox = ui.CheckBox(model=sfw.equipforphysics_checkbox_model,
+                                                                   width=40, height=10, name="equipforphysics",
+                                                                   visible=True)

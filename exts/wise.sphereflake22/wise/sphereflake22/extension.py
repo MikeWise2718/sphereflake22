@@ -3,7 +3,7 @@ from .ovut import write_out_syspath, write_out_path
 from .sfgen.sfut import MatMan
 from .sfgen.sphereflake import SphereMeshFactory, SphereFlakeFactory
 from .sfcontrols import SfControls
-from .sfwindow import SfcWindow
+from .sfwindow import SfWindow
 import omni.kit.extensions
 import carb
 import carb.events
@@ -73,7 +73,7 @@ class SphereflakeBenchmarkExtension(omni.ext.IExt):
     _smf: SphereMeshFactory = None
     _sff: SphereFlakeFactory = None
     _sfc: SfControls = None
-    _sfw: SfcWindow = None
+    _sfw: SfWindow = None
     _settings = None
     _stage: Usd.Stage = None
 
@@ -115,7 +115,7 @@ class SphereflakeBenchmarkExtension(omni.ext.IExt):
         print("SphereflakeBenchmarkExtension - _sfc assigned (trc)")
 
         # View objects
-        self._sfw = SfcWindow(sfc=self._sfc)
+        self._sfw = SfWindow(sfc=self._sfc)
         print("SphereflakeBenchmarkExtension - _sfw assigned (trc)")
         self._sfw.DockWindow()
         self._sfw.ShowTheDamnWindow()

@@ -1,7 +1,7 @@
 import omni.ui as ui
 from ._widgets import BaseTab
 from .sfcontrols import SfControls
-from .sfwindow import SfcWindow
+from .sfwindow import SfWindow
 import os
 
 import omni.client
@@ -96,10 +96,10 @@ def list_session_users():
 
 
 class SfcTabSessionInfo(BaseTab):
-    sfw: SfcWindow
+    sfw: SfWindow
     sfc: SfControls
 
-    def __init__(self, sfw: SfcWindow):
+    def __init__(self, sfw: SfWindow):
         super().__init__("Session")
         self.sfw = sfw
         self.sfc = sfw.sfc

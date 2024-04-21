@@ -107,7 +107,9 @@ class SfControls():
     p_doloadusd_session = False
     p_doloadusd_sessionname = "None"
 
-    p_addcolliders = False
+    p_equipforphysics = False
+
+    p_addrand = False
 
     currenttag = "Empty"
 
@@ -192,10 +194,11 @@ class SfControls():
             save_setting("p_doloadusd_url", self.p_doloadusd_url)
             save_setting("p_doloadusd_session", self.p_doloadusd_session)
             save_setting("p_doloadusd_sessionname", self.p_doloadusd_sessionname)
-            save_setting("p_addcolliders", self.p_addcolliders)
+            save_setting("p_equipforphysics", self.p_equipforphysics)
+            save_setting("p_addrand", self.p_addrand)
             if self.sff is not None:
                 self.sff.SaveSettings()
-            print(f"SaveSettings: p_addcolliders:{self.p_addcolliders} (trc)")
+            print(f"SaveSettings: p_equipforphysics:{self.p_equipforphysics} (trc)")
         except Exception as e:
             carb.log_error(f"Exception in sfcontrols.SaveSettings: {e}")
 
@@ -211,8 +214,9 @@ class SfControls():
         self.p_doloadusd_url = get_setting("p_doloadusd_url", "omniverse://localhost/sphereflake.usd")
         self.p_doloadusd_session = get_setting("p_doloadusd_session", False)
         self.p_doloadusd_sessionname = get_setting("p_doloadusd_sessionname", "None")
-        self.p_addcolliders = get_setting("p_addcolliders", False)
-        print(f"LoadSettings: p_addcolliders:{self.p_addcolliders}  (trc)")
+        self.p_equipforphysics = get_setting("p_equipforphysics", False)
+        self.p_addrand = get_setting("p_addrand", False)
+        print(f"LoadSettings: p_equipforphysics:{self.p_equipforphysics}  (trc)")
 
     def setup_environment(self, extent3f: Gf.Vec3f,  force: bool = False):
         ppathstr = "/World/Floor"
@@ -231,7 +235,7 @@ class SfControls():
             stage = omni.usd.get_context().get_stage()
             prim: Usd.Prim = stage.GetPrimAtPath(ppathstr)
             UsdShade.MaterialBindingAPI(prim).Bind(mtl)
-            if self.p_addcolliders:
+            if self.p_equipforphysics:
                 # rigid_api = UsdPhysics.RigidBodyAPI.Apply(prim)
                 # rigid_api.CreateRigidBodyEnabledAttr(True)
                 UsdPhysics.CollisionAPI.Apply(prim)
@@ -300,8 +304,8 @@ class SfControls():
         print(f"query_write_log is now:{self.p_writelog} name:{self.p_logseriesname}")
 
     def query_physics(self):
-        self.p_addcolliders = self.sfw.addcolliders_checkbox_model.as_bool
-        print(f"add colliders is now:{self.p_addcolliders}")
+        self.p_equipforphysics = self.sfw.equipforphysics_checkbox_model.as_bool
+        print(f"sfc.p_equipforphysics is now:{self.p_equipforphysics}")
 
     def query_remote_settings(self):
         sfw = self.sfw
@@ -390,11 +394,11 @@ class SfControls():
         sff.p_bb_matname = self.get_curmat_bbox_name()
         sff.p_tag = self.currenttag
         self.query_physics()
-        sff.p_addcolliders = self.p_addcolliders
+        sff.p_equipforphysics = self.p_equipforphysics
 
         if sff.p_parallelRender:
             self.query_remote_settings()
-            self._stage = omni.usd.get_context().get_stage()      
+            self._stage = omni.usd.get_context().get_stage()
             sff.ResetStage(self._stage)
             await sff.GenerateManyParallel(doremote=self.p_doremote,
                                            remotetype=self.p_doremotetype,
@@ -657,6 +661,14 @@ class SfControls():
             idx = 0
         self._curprim = self._prims[idx]
         self.sfw._sf_primtospawn_but.text = f"{self._curprim}"
+
+    matclickcount = 0
+
+    def on_click_resetmaterials(self):
+        self._matman.Reinitialize()
+        nmat = self._matman.GetMaterialCount()
+        self.sfw.reset_materials_but.text = f"Reset Materials ({nmat} defined) - {self.matclickcount}"
+        self.matclickcount += 1
 
     def UpdateNQuads(self):
         ntris, nprims = self.sff.CalcTrisAndPrims()
