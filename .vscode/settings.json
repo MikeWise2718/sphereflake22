@@ -6,7 +6,7 @@
 
     // Python modules search paths:
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/exts/wise.sphereflake22",
+        "${workspaceFolder}/exts/sphereflake22",
         "${workspaceFolder}/app/kit/extscore/omni.kit.pip_archive/pip_prebundle",
         "${workspaceFolder}/app/kit/kernel/py",
         "${workspaceFolder}/app/kit/plugins/bindings-python",

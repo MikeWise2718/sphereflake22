@@ -7,7 +7,7 @@ This project was automatically generated.
 
 Open this folder using Visual Studio Code. It will suggest you to install few extensions that will make python experience better.
 
-Look for "wise.sphereflake22" extension in extension manager and enable it. Try applying changes to any python files, it will hot-reload and you can observe results immediately.
+Look for "sphereflake22" extension in extension manager and enable it. Try applying changes to any python files, it will hot-reload and you can observe results immediately.
 
 Alternatively, you can launch your app from console with this folder added to search path and your extension enabled, e.g.:
 
@@ -49,4 +49,3 @@ Link might look like this: `git://github.com/[user]/[your_repo].git?branch=main&
 Notice `exts` is repo subfolder with extensions. More information can be found in "Git URL as Extension Search Paths" section of developers manual.
 
 To add a link to your *Omniverse Kit* based app go into: Extension Manager -> Gear Icon -> Extension Search Path
-

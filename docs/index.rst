@@ -1,4 +1,4 @@
-wise.sphereflake22
+sphereflake22
 #############################
 
 Example of Python only extension
@@ -11,7 +11,7 @@ Example of Python only extension
    CHANGELOG
 
 
-.. automodule::"wise.sphereflake22"
+.. automodule::"sphereflake22"
     :platform: Windows-x86_64, Linux-x86_64
     :members:
     :undoc-members:

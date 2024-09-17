@@ -6,7 +6,7 @@ version = "1.0.0"
 authors = ["mike-wise"]
 
 # The title and description fields are primarily for displaying extension info in UI
-title = "Wise Sphereflake22"
+title = "Sphereflake22"
 description="Spawn SphereFlakes in the scene using different techniques for benchmarking purposes"
 
 
@@ -37,9 +37,9 @@ icon = "data/icon.png"
 [dependencies]
 "omni.kit.uiapp" = {}
 
-# Main python module this extension provides, it will be publicly available as "import wise.sphereflake22".
+# Main python module this extension provides, it will be publicly available as "import sphereflake22".
 [[python.module]]
-name = "wise.sphereflake22"
+name = "sphereflake22"
 
 [[test]]
 # Extra dependencies only to be used during test run

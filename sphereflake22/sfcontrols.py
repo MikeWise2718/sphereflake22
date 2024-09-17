@@ -152,7 +152,7 @@ class SfControls():
     def LateInit(self):
         # Register endpoints
         try:
-            # D:\nv\ov\app\sfapp\_build\windows-x86_64\release\data\Kit\wise.sfapp.view\1.0>notepad user.config.json
+            # D:\nv\ov\app\sfapp\_build\windows-x86_64\release\data\Kit\sfapp.view\1.0>notepad user.config.json
             # from omni.core.utils.extensions import enable_extension
             # enable_extension("omni.services.core")
             # from omni.kit.window.extensions import ext_controller, enable_extension
