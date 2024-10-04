@@ -5,8 +5,8 @@ import datetime
 import json
 import socket
 import psutil
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade
-from pxr import UsdPhysics, PhysxSchema, Gf, PhysicsSchemaTools, UsdGeom
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade, UsdLux
+from pxr import UsdPhysics, Gf, UsdGeom
 from .ovut import delete_if_exists, write_out_syspath, truncf
 from .sfgen.sfut import MatMan
 from .sfgen.spheremesh import SphereMeshFactory
@@ -218,7 +218,17 @@ class SfControls():
         self.p_addrand = get_setting("p_addrand", False)
         print(f"LoadSettings: p_equipforphysics:{self.p_equipforphysics}  (trc)")
 
+    def create_sphere_light(self):
+        path = "/World/Light/SphereLight"
+        l = UsdLux.SphereLight.Define(self._stage, Sdf.Path(path))
+        l.CreateIntensityAttr(9000.0)
+        l.CreateRadiusAttr(0.1)
+        l.CreateColorAttr( (1.0, 1.0, 1.0 ) )
+        l.AddTranslateOp().Set( Gf.Vec3d( 0.0, 2.0, 1.0 ) ) 
+        print(f"created spherei light at {path}") 
+
     def setup_environment(self, extent3f: Gf.Vec3f,  force: bool = False):
+        print("setup_environment")
         ppathstr = "/World/Floor"
         if force:
             delete_if_exists(ppathstr)
@@ -250,12 +260,17 @@ class SfControls():
                         new_scales=[self._floor_xdim, 1, self._floor_zdim])
             baseurl = 'https://omniverse-content-production.s3.us-west-2.amazonaws.com'
             okc.execute('CreateDynamicSkyCommand',
-                        sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
-                        sky_path='/Environment/sky')
+                    sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
+                    sky_path='/Environment/sky')
+            skyprim: Usd.Prim = self._stage.GetPrimAtPath('/Environment/sky')
+            if not skyprim.IsValid():
+                print("Error: Could not execute CreateDynamicSkyCommand so creating sphere light")
+                self.create_sphere_light()
 
             # print(f"nvidia_smi.__file__:{nvidia_smi.__file__}")
             # print(f"omni.ui.__file__:{omni.ui.__file__}")
             # print(f"omni.ext.__file__:{omni.ext.__file__}")
+            print("setup_environment done")
 
     def ensure_stage(self):
         # print("ensure_stage")
@@ -766,8 +781,11 @@ class SfControls():
 
         jline = json.dumps(rundict, sort_keys=True)
 
-        fname = "d:/nv/ov/log.txt"
-        with open(fname, "a") as f:
-            f.write(f"{jline}\n")
+        try:
+            fname = "log.txt"
+            with open(fname, "a") as f:
+                f.write(f"{jline}\n")
 
-        print("wrote log")
+            print(f"wrote log to {fname}")
+        except Exception:
+            pass

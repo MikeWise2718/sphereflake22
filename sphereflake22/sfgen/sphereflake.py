@@ -4,7 +4,7 @@ import asyncio
 import math
 import socket
 from pxr import Gf, Usd, UsdGeom, UsdShade
-from pxr import UsdPhysics, PhysxSchema, Gf, PhysicsSchemaTools, UsdGeom
+from pxr import UsdPhysics, Gf, UsdGeom
 from .spheremesh import SphereMeshFactory
 from .sfut import MatMan, get_setting, save_setting
 
@@ -494,7 +494,7 @@ class SphereFlakeFactory():
             spheregeom = UsdGeom.Sphere.Define(stage, meshname)
             mtl = self._matman.GetMaterial(matname)
             UsdShade.MaterialBindingAPI(spheregeom).Bind(mtl)
-            print(f"GenRecursively - equipforphysics: {self.p_equipforphysics}")
+            # print(f"GenRecursively - equipforphysics: {self.p_equipforphysics}")
             if self.p_equipforphysics:
                 spherePrim = stage.GetPrimAtPath(meshname)
                 rigid_api = UsdPhysics.RigidBodyAPI.Apply(spherePrim)

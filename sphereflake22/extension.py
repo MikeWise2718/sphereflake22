@@ -53,7 +53,7 @@ def on_update_event(e: carb.events.IEvent):
 def on_stage_event(e: carb.events.IEvent):
     global initialized_objects, instance_handle, update_count, start_time
     totelap = time.time() - start_time
-    print(f"on_stage_event {update_count} {totelap:.3f} typ:{e.type} pay:{e.payload} (trc1)")
+    # print(f"on_stage_event {update_count} {totelap:.3f} typ:{e.type} pay:{e.payload} (trc1)")
     if not initialized_objects:
         stage = omni.usd.get_context().get_stage()
         if stage is not None:
