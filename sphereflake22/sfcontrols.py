@@ -221,11 +221,16 @@ class SfControls():
     def create_sphere_light(self):
         path = "/World/Light/SphereLight"
         l = UsdLux.SphereLight.Define(self._stage, Sdf.Path(path))
-        l.CreateIntensityAttr(9000.0)
-        l.CreateRadiusAttr(0.1)
+        l.CreateColorTemperatureAttr(6500.0)
+        l.CreateIntensityAttr(350000.0)
+        l.CreateRadiusAttr(200)
         l.CreateColorAttr( (1.0, 1.0, 1.0 ) )
-        l.AddTranslateOp().Set( Gf.Vec3d( 0.0, 2.0, 1.0 ) ) 
-        print(f"created spherei light at {path}") 
+        l.CreateDiffuseAttr( 3.0 )
+        try:
+            l.AddTranslateOp().Set( Gf.Vec3d( 0.0, 800.0, 0.0 ) )
+        except Exception as e:
+            print(f"create_sphere_light exception:{e}")
+        print(f"created sphere light at {path}")
 
     def setup_environment(self, extent3f: Gf.Vec3f,  force: bool = False):
         print("setup_environment")
@@ -259,9 +264,9 @@ class SfControls():
                         paths=[ppathstr],
                         new_scales=[self._floor_xdim, 1, self._floor_zdim])
             baseurl = 'https://omniverse-content-production.s3.us-west-2.amazonaws.com'
-            okc.execute('CreateDynamicSkyCommand',
-                    sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
-                    sky_path='/Environment/sky')
+            # okc.execute('CreateDynamicSkyCommand',
+            #         sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
+            #         sky_path='/Environment/sky')
             skyprim: Usd.Prim = self._stage.GetPrimAtPath('/Environment/sky')
             if not skyprim.IsValid():
                 print("Error: Could not execute CreateDynamicSkyCommand so creating sphere light")
