@@ -1,6 +1,6 @@
 [package]
 # Semantic Versioning is used: https://semver.org/
-version = "1.0.0"
+version = "1.0.1"
 
 # Lists people or organizations that are considered the "authors" of the package.
 authors = ["mike-wise"]
@@ -48,5 +48,5 @@ dependencies = [
 ]
 
 [python.pipapi]
-requirements = ["nvidia-smi","nvidia-ml-py3"]
+requirements = []
 use_online_index = true

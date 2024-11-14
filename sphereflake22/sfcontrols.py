@@ -11,7 +11,6 @@ from .ovut import delete_if_exists, write_out_syspath, truncf
 from .sfgen.sfut import MatMan
 from .sfgen.spheremesh import SphereMeshFactory
 from .sfgen.sphereflake import SphereFlakeFactory
-import nvidia_smi
 # import multiprocessing
 import subprocess
 import os
@@ -264,9 +263,9 @@ class SfControls():
                         paths=[ppathstr],
                         new_scales=[self._floor_xdim, 1, self._floor_zdim])
             baseurl = 'https://omniverse-content-production.s3.us-west-2.amazonaws.com'
-            # okc.execute('CreateDynamicSkyCommand',
-            #         sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
-            #         sky_path='/Environment/sky')
+            okc.execute('CreateDynamicSkyCommand',
+                    sky_url=f'{baseurl}/Assets/Skies/2022_1/Skies/Dynamic/CumulusLight.usd',
+                    sky_path='/Environment/sky')
             skyprim: Usd.Prim = self._stage.GetPrimAtPath('/Environment/sky')
             if not skyprim.IsValid():
                 print("Error: Could not execute CreateDynamicSkyCommand so creating sphere light")
@@ -704,7 +703,9 @@ class SfControls():
 
     def UpdateGpuMemory(self):
 
+        # This is not always available
         try:
+            import nvidia_smi
             nvidia_smi.nvmlInit()
 
             handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
