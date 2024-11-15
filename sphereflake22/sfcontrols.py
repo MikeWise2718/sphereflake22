@@ -92,6 +92,7 @@ class SfControls():
     _sf_size = 50
     _vsc_test8 = False
     _gpuinfo = None
+    _no_nvidia_smi = False
     sfw = None  # We can't give this a type because it would be a circular reference
     p_writelog = True
     p_logseriesname = "None"
@@ -704,21 +705,29 @@ class SfControls():
     def UpdateGpuMemory(self):
 
         # This is not always available
-        try:
-            import nvidia_smi
-            nvidia_smi.nvmlInit()
-
-            handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
-            # card id 0 hardcoded here, there is also a call to get all available card ids, so we could iterate
-            gpuinfo = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
-
-        except Exception:
+        if self._no_nvidia_smi:
             gpuinfo = DummyGpuInfo()
+        else:
+            try:
+                import nvidia_smi
+                nvidia_smi.nvmlInit()
+
+                handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+                # card id 0 hardcoded here, there is also a call to get all available card ids, so we could iterate
+                gpuinfo = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+
+
+            except Exception:
+                self._no_nvidia_smi = True
+                gpuinfo = DummyGpuInfo()
 
         self._gpuinfo = gpuinfo
 
         om = float(1024*1024*1024)
-        msg = f"GPU Mem tot:  {gpuinfo.total/om:.2f}: used:  {gpuinfo.used/om:.2f} free:  {gpuinfo.free/om:.2f} GB"
+        if self._no_nvidia_smi:
+            msg = "No GPU mem because nvidia_smi not available"
+        else:
+            msg = f"GPU Mem tot:  {gpuinfo.total/om:.2f}: used:  {gpuinfo.used/om:.2f} free:  {gpuinfo.free/om:.2f} GB"
         memused = psutil.virtual_memory().used
         memtot = psutil.virtual_memory().total
         memfree = psutil.virtual_memory().free
