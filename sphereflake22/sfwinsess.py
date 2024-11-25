@@ -8,7 +8,6 @@ import omni.client
 import omni.usd_resolver
 
 # Internal imports
-import omni.kit.collaboration.channel_manager as cm
 # import omni.kit.layers.live_session_channel_manager as lscm
 
 
@@ -78,13 +77,29 @@ class LiveSessionInfo:
 
 
 g_live_session_channel_manager = None
+cm_initialized = False
+cm_errored = False
 
 
 def list_session_users():
     global g_live_session_channel_manager
-    # users are cm.PeerUser types
     if g_live_session_channel_manager is None:
         return ["Live session not initialized"]
+
+
+    if cm_errored:
+        return ["Error - cound not import channel_manager"]
+
+    if not cm_initialized:
+        try:
+            import omni.kit.collaboration.channel_manager as cm
+        except ImportError:
+            cm_errored = True
+            return ["Error importing channel_manager"]
+
+    cm_initialized = True
+
+    # users are cm.PeerUser types
     users: set(cm.PeerUser)
     users = g_live_session_channel_manager.get_users()
     txtlst = ["Listing session users: "]
